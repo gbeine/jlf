@@ -32,7 +32,7 @@ setup(
         'fogbugz',
         'jira',
         'openpyxl==1.6.2',
-        'pandas',
+        'pandas==0.19.2',
         'python-dateutil==1.5',
         'pytz==2013b',
         'xlrd==0.9.2',

@@ -184,6 +184,11 @@ def history_from_jira_changelog(changelog, created_date, until_date=None):
 
     dates = [created_date + timedelta(days=x) for x in range(0, total_days)]
 
+    while len(issue_day_history) > len(dates):
+        print(dates)
+        print(issue_day_history)
+        issue_day_history.pop(0)
+ 
     try:
         history = pd.Series(issue_day_history, index=dates)
     except AssertionError as e:
