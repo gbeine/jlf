@@ -113,7 +113,7 @@ def extract_date(created):
     return datetime.strptime(created[:10], '%Y-%m-%d').date()
 
 
-def time_in_states(histories, from_date=None, until_date=None):
+def time_in_states(histories, reverse_history, initial_state, from_date=None, until_date=None):
     """
     How long did an issue spend in each state in its history.
 
@@ -126,7 +126,7 @@ def time_in_states(histories, from_date=None, until_date=None):
 
     time_in_states = []
 
-    current_state = u'Open'
+    current_state = initial_state
 
     if from_date is None:
         from_date = date(1970, 01, 01)
@@ -136,7 +136,12 @@ def time_in_states(histories, from_date=None, until_date=None):
     else:
         prev_state_change_date = from_date
 
-    for history in reversed(histories):
+    if reverse_history:
+        history_data = reversed(histories)
+    else:
+        history_data = histories
+
+    for history in history_data:
         for item in history.items:
             if item.field == 'status':
                 state_change_date = extract_date(history.created)
@@ -164,9 +169,9 @@ def time_in_states(histories, from_date=None, until_date=None):
     return time_in_states
 
 
-def history_from_jira_changelog(changelog, created_date, until_date=None):
+def history_from_jira_changelog(changelog, reverse_history, initial_state, created_date, until_date=None):
 
-    issue_history = time_in_states(changelog.histories, from_date=created_date, until_date=until_date)
+    issue_history = time_in_states(changelog.histories, reverse_history, initial_state, from_date=created_date, until_date=until_date)
 
     issue_day_history = []
     history = None

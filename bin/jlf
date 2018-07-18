@@ -44,6 +44,14 @@ def main():
     if 'until_date' not in config:
         config['until_date'] = datetime.strftime(end_date, '%Y-%m-%d')
 
+    if 'initial_state' not in config:
+        config['initial_state'] = u'Open'
+
+    if 'reverse_history' not in config or config['reverse_history'] != 'False':
+        config['reverse_history'] = 1
+    else:
+        config['reverse_history'] = 0
+
     metrics = Metrics(config=config)
 
     metrics.save_work_items()

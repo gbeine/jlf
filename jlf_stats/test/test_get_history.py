@@ -253,7 +253,7 @@ class TestIssueHistory(unittest.TestCase):
         created = date(2012, 11, 16)
         today = date(2012, 12, 02)
 
-        actual = time_in_states(histories, created, today)
+        actual = time_in_states(histories, True, u'Open', created, today)
 
         expected = [{'state': 'Open',
                      'days':  2},
@@ -279,7 +279,7 @@ class TestIssueHistory(unittest.TestCase):
         expected = [{'state': 'Open',
                      'days': 16}]
 
-        actual = time_in_states([], created, today)
+        actual = time_in_states([], True, u'Open', created, today)
 
         assert actual == expected, actual
 
@@ -327,7 +327,7 @@ class TestIssueHistory(unittest.TestCase):
                                     date(2012, 1, 12),
                                     date(2012, 1, 13)])
 
-        actual = history_from_jira_changelog(source, date(2012, 1, 1))
+        actual = history_from_jira_changelog(source, True, u'Open',  date(2012, 1, 1))
         assert_series_equal(actual, expected)
 
     def testGetArrivals(self):

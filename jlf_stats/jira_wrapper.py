@@ -74,6 +74,9 @@ class JiraWrapper(object):
         if 'until_date' in config:
             self.until_date = datetime.strptime(config['until_date'], '%Y-%m-%d').date()
 
+        self.reverse_history = config['reverse_history']
+        self.initial_state = config['initial_state']
+
         try:
             self.categories = config['categories']
             self.cycles = config['cycles']
@@ -145,7 +148,7 @@ class JiraWrapper(object):
                     date_created = datetime.strptime(issue.fields.created[:10], '%Y-%m-%d')
 
                     if issue.changelog is not None:
-                        issue_history = history_from_jira_changelog(issue.changelog, date_created, self.until_date)
+                        issue_history = history_from_jira_changelog(issue.changelog, self.reverse_history, self.initial_state, date_created, self.until_date)
 
                         try:
 
@@ -275,6 +278,8 @@ class JiraWrapper(object):
 
             if issue.changelog is not None:
                 tis = time_in_states(issue.changelog.histories,
+                                     self.reverse_history,
+                                     self.initial_state,
                                      datetime.strptime(f.created[:10],
                                                        '%Y-%m-%d'),
                                      date.today())
