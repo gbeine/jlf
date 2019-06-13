@@ -12,9 +12,9 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 setup(
-    name="Just lean forward",
+    name="just lean forward",
     version="0.2.0",
-    description="Get Lean Stats like throughput and cycle time out of Jira/FogBugz with ease",
+    description="Get Lean Stats like throughput and cycle time out of Jira with ease",
     author="Chris Young",
     license="LICENSE.md",
     author_email="chris@chrisyoung.org,mail@gerritbeine.com",

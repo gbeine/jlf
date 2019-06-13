@@ -19,7 +19,7 @@ It is intended to complement the existing [kanban reporting](https://confluence.
 
 ### Dependencies
 
-* Python - tested with 2.7
+* Python - tested with 3.7
 * Recommened but not essential: Python [virtualenv](https://pypi.python.org/pypi/virtualenv)
 * Access to a JIRA instance
 

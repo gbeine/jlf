@@ -9,11 +9,14 @@ from jlf_stats import publisher
 import json
 from datetime import datetime, timedelta
 import argparse
+import logging
 import sys
 from jlf_stats.exceptions import MissingState, MissingConfigItem
 
 
 def main():
+
+    logging.basicConfig(level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(description='Get forward looking metrics from JIRA')
 
