@@ -18,10 +18,10 @@ import sys
 
 from datetime import date, datetime
 
-from index import week_start_date
-from history import time_in_states, cycle_time, history_from_jira_changelog
-from exceptions import MissingConfigItem
-from work import WorkItem
+from jlf_stats.index import week_start_date
+from jlf_stats.history import time_in_states, cycle_time, history_from_jira_changelog
+from jlf_stats.exceptions import MissingConfigItem
+from jlf_stats.work import WorkItem
 import dateutil.parser
 
 

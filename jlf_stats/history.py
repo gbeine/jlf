@@ -129,7 +129,7 @@ def time_in_states(histories, reverse_history, initial_state, from_date=None, un
     current_state = initial_state
 
     if from_date is None:
-        from_date = date(1970, 01, 01)
+        from_date = date(1970, 1, 1)
 
     if hasattr(from_date, 'date'):
         prev_state_change_date = from_date.date()
@@ -197,9 +197,9 @@ def history_from_jira_changelog(changelog, reverse_history, initial_state, creat
     try:
         history = pd.Series(issue_day_history, index=dates)
     except AssertionError as e:
-        print e
-        print dates
-        print issue_day_history
+        print(e)
+        print(dates)
+        print(issue_day_history)
 
     return history
 

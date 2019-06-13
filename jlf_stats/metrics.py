@@ -1,17 +1,16 @@
 """
 Metrics
 """
-from jlf_stats.fogbugz_wrapper import FogbugzWrapper
 from jlf_stats.jira_wrapper import JiraWrapper
 
 import pandas as pd
 import numpy as np
 import math
 
-import exceptions
-from bucket import bucket_labels
-from index import fill_date_index_blanks, week_start_date
-from history import arrivals, history_from_state_transitions
+import jlf_stats.exceptions
+from jlf_stats.bucket import bucket_labels
+from jlf_stats.index import fill_date_index_blanks, week_start_date
+from jlf_stats.history import arrivals, history_from_state_transitions
 
 import re
 import os
@@ -368,7 +367,7 @@ class Metrics(object):
             try:
                 arrivals_count = arrivals(work_item.history, arrivals_count)
             except AttributeError as e:
-                print e
+                print(e)
 
         df = pd.DataFrame.from_dict(arrivals_count, orient='index')
         df.index = pd.to_datetime(df.index)
