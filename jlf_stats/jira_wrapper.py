@@ -19,7 +19,7 @@ import sys
 from datetime import date, datetime
 import logging
 
-from jlf_stats.history import time_in_states, history_from_jira_changelog
+from jlf_stats.history import history_from_jira_changelog
 from jlf_stats.exceptions import MissingConfigItem
 from jlf_stats.work import WorkItem
 import dateutil.parser
