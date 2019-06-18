@@ -28,11 +28,10 @@ def history_from_jira_changelog(changelog, reverse_history, initial_state, creat
     for history in history_data:
         change_date = extract_date(history.created)
         for item in history.items:
-            if item.field == 'status' or item.field == 'Markiert':
-                logging.error("Field: {}".format(item.field))
-            if item.field == 'status':
-                issue.addChange(change_date, item)
+            if item.field in ['status', 'Markiert']:
+                logging.debug("Field: {}".format(item.field))
+                issue.add_change(change_date, item)
 
-    issue.finalizeHistory(until_date)
+    issue.finalize_history(until_date)
     
     return issue.history()

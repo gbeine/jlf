@@ -7,7 +7,7 @@ from datetime import timedelta
 
 class Issue(object):
 
-    def __init__(self, initial_state, created_date):
+    def __init__(self, initial_state, created_date, ignore_blocker=False):
         self._current_state = initial_state
         self._last_state = None
 
@@ -17,26 +17,37 @@ class Issue(object):
 
         self._time_in_states = []
         self._finalized = False
-
-    def addChange(self, date, change):
-        self._state_change_date = date
-        days_in_state = self._state_change_date - self._last_state_change_date
+        self._is_blocked = False
         
-        # only if not blocker!
-        if self._current_state is None:
-            self._current_state = change.fromString
+        self._ignore_blocker = ignore_blocker
 
-        logging.debug("State {} for {} days".format(self._current_state, days_in_state.days))
 
-        self._time_in_states.append({'state': self._current_state, 'days': days_in_state.days})
+    def add_change(self, date, change):
+        
+        if change.field == 'status':
+            if self._is_blocked:
+                self._last_state = change.toString
+                logging.debug("State change to {} on {} while blocked".format(self._current_state, self._state_change_date))
+            else:
+                self._add_change(date, change)
+                self._last_state = self._current_state
+                self._current_state = change.toString
+                logging.debug("State change to {} on {}".format(self._current_state, self._state_change_date))
 
-        # only if not blocker!
-        self._last_state = self._current_state
-        self._current_state = change.toString
-        self._last_state_change_date = self._state_change_date
-        logging.debug("State change to {} on {}".format(self._current_state, self._state_change_date))
+        if not self._ignore_blocker and change.field in ['Markiert']:
+            self._add_change(date, change)
 
-    def finalizeHistory(self, date=None):
+            if len(change.toString) == 0:
+                self._current_state = self._last_state
+                self._is_blocked = False
+            else:
+                self._last_state = self._current_state
+                self._current_state = change.toString
+                self._is_blocked = True
+            logging.debug("State change to {} on {}".format(self._current_state, self._state_change_date))
+
+
+    def finalize_history(self, date=None):
         if self._finalized:
             return
 
@@ -48,6 +59,7 @@ class Issue(object):
 
         self._time_in_states.append({'state': self._current_state, 'days':  final_state_days})
         self._finalized = True
+
 
     def history(self):
         if not self._finalized:
@@ -69,3 +81,11 @@ class Issue(object):
         logging.debug("Issue exists for {} days".format(total_days))
 
         return pandas.Series(history, index=dates)
+
+
+    def _add_change(self, date, change):
+        self._state_change_date = date
+        days_in_state = self._state_change_date - self._last_state_change_date
+        logging.debug("State {} for {} days".format(self._current_state, days_in_state.days))
+        self._time_in_states.append({'state': self._current_state, 'days': days_in_state.days})
+        self._last_state_change_date = self._state_change_date
