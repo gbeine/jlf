@@ -17,9 +17,9 @@ import jira.client
 import sys
 
 from datetime import date, datetime
+import logging
 
-from jlf_stats.index import week_start_date
-from jlf_stats.history import time_in_states, cycle_time, history_from_jira_changelog
+from jlf_stats.history import time_in_states, history_from_jira_changelog
 from jlf_stats.exceptions import MissingConfigItem
 from jlf_stats.work import WorkItem
 import dateutil.parser
@@ -117,9 +117,10 @@ class JiraWrapper(object):
 
         batch_size = 100
         work_items = []
-
+        
         for category in self.categories:
 
+            logging.debug(category)
             n = 0
             while 1:
 
@@ -127,88 +128,29 @@ class JiraWrapper(object):
                 if filter is not None:
                     jql = jql + filter
 
+                logging.debug(jql)
+
                 issue_batch = self.jira.search_issues(jql,
                                                       startAt=n,
                                                       maxResults=batch_size,
                                                       expand='changelog')
 
-                if issue_batch is None:
-                    #TODO: Fix mocking so we can get rid of this.
-                    # 'expand' seems to have some magic meaning in Mockito...
-                    issue_batch = self.jira.search_issues(jql,
-                                                          startAt=n,
-                                                          maxResults=batch_size)
+                logging.info("Found {} items".format(issue_batch.total))
 
                 for issue in issue_batch:
 
                     issue.category = category
                     issue_history = None
                     cycles = {}
+                    state_transitions = []
 
                     date_created = datetime.strptime(issue.fields.created[:10], '%Y-%m-%d')
 
+                    logging.debug("Item {}, created at {}".format(issue.key, date_created))
+
                     if issue.changelog is not None:
+                        logging.debug("Changelog available for item {}".format(issue.key))
                         issue_history = history_from_jira_changelog(issue.changelog, self.reverse_history, self.initial_state, date_created, self.until_date)
-
-                        try:
-
-                            for cycle in self.cycles:
-                                reopened_state = None
-                                after_state = None
-                                start_state = None
-                                exit_state = None
-                                end_state = None
-                                include_states = None
-                                exclude_states = None
-
-                                if 'ignore' in self.cycles[cycle]:
-                                    reopened_state = self.cycles[cycle]['ignore']
-
-                                if 'after' in self.cycles[cycle]:
-                                    after_state = self.cycles[cycle]['after']
-
-                                if 'start' in self.cycles[cycle]:
-                                    start_state = self.cycles[cycle]['start']
-
-                                if 'exit' in self.cycles[cycle]:
-                                    exit_state = self.cycles[cycle]['exit']
-
-                                if 'include' in self.cycles[cycle]:
-                                    include_states = self.cycles[cycle]['include']
-
-                                if 'exclude' in self.cycles[cycle]:
-                                    exclude_states = self.cycles[cycle]['exclude']
-
-                                if 'end' in self.cycles[cycle]:
-                                    end_state = self.cycles[cycle]['end']
-
-                                    cycles[cycle] = cycle_time(issue_history,
-                                                               start_state=start_state,
-                                                               after_state=after_state,
-                                                               include_states=include_states,
-                                                               exclude_states=exclude_states,
-                                                               end_state=end_state,
-                                                               reopened_state=reopened_state)
-
-                                else:
-
-                                    cycles[cycle] = cycle_time(issue_history,
-                                                               start_state=start_state,
-                                                               after_state=after_state,
-                                                               include_states=include_states,
-                                                               exclude_states=exclude_states,
-                                                               exit_state=exit_state,
-                                                               reopened_state=reopened_state)
-
-                        except AttributeError:
-
-                            pass
-
-                    state_transitions = []
-                    if issue.changelog is not None:
-                        for change in issue.changelog.histories:
-                            st = self.state_transition(change)
-                            state_transitions.append(st)
 
                     work_items.append(WorkItem(id=issue.key,
                                                title=issue.fields.summary,
@@ -227,126 +169,3 @@ class JiraWrapper(object):
                 sys.stdout.flush()
 
         return work_items
-
-    def state_transition(self, history):
-
-        timestamp = dateutil.parser.parse(history.created)
-
-        for item in history.items:
-            if item.field == 'status':
-                from_state = item.fromString
-                to_state = item.toString
-
-                return {'from': from_state,
-                        'to': to_state,
-                        'timestamp': timestamp}
-
-        return None
-
-    # This is on its way out
-
-    def _issues_as_rows(self, issues, types=None):
-
-        """
-        Get issues into a state where we can stick them into a Pandas dataframe
-        """
-
-        # TODO: Decide if this should be a class / helper method?
-        # TODO: See if has any overlap with throughput function
-
-        issue_rows = []
-
-        for issue in issues:
-            f = issue.fields
-
-            resolution_date_str = f.resolutiondate
-
-            if resolution_date_str is not None:
-                resolution_date = datetime.strptime(resolution_date_str[:10],
-                                                    '%Y-%m-%d')
-
-                week = week_start_date(resolution_date.isocalendar()[0],
-                                       resolution_date.isocalendar()[1]).strftime('%Y-%m-%d')
-
-            else:
-
-                week = None
-
-            date_created = datetime.strptime(f.created[:10], '%Y-%m-%d')
-            week_created = week_start_date(date_created.isocalendar()[0],
-                                           date_created.isocalendar()[1]).strftime('%Y-%m-%d')
-
-            if issue.changelog is not None:
-                tis = time_in_states(issue.changelog.histories,
-                                     self.reverse_history,
-                                     self.initial_state,
-                                     datetime.strptime(f.created[:10],
-                                                       '%Y-%m-%d'),
-                                     date.today())
-
-                since = tis[-1]['days']
-
-            else:
-
-                since = None
-
-            include = True
-
-            # TODO: This looks like a bit of a hack.
-            # Can we do without iterating over loop, seeing as we
-            # only ever want one swimlane/category combination?
-
-            swimlane = issue.category
-
-            if types is not None and self.types is not None:
-                include = False
-                for type_grouping in types:
-                    if f.issuetype.name in self.types[type_grouping]:
-                        swimlane = swimlane + '-' + type_grouping
-                        include = True
-
-            if include:
-
-                try:
-                    story_points = f.customfield_10002
-                except AttributeError:
-                    story_points = None
-
-                try:
-                    epic_link = f.customfield_10200
-                except AttributeError:
-                    epic_link = None
-
-                # TODO: Fields need to come out of config too.
-
-                issue_row = {'swimlane':     swimlane,
-                             'type':         f.issuetype.name,
-                             'id':           issue.key,
-                             'name':         f.summary,
-                             'status':       f.status.name,
-                             'project':      f.project.name,
-                             'components':   None,
-                             'week':         week,
-                             'since':        since,
-                             'created':      f.created,
-                             'week_created': week_created,
-                             'story_points': story_points,
-                             'epic_link':    epic_link,
-                             'count':        1}
-
-                for cycle in self.cycles:
-                    try:
-                        issue_row[cycle] = getattr(issue, cycle)
-                    except AttributeError:
-                        pass
-
-                components = []
-
-                for component in f.components:
-                    components.append(component.name)
-
-                issue_row['components'] = ",".join(components)
-
-                issue_rows.append(issue_row)
-
-        return issue_rows

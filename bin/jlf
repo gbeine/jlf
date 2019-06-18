@@ -31,11 +31,6 @@ def main():
                         dest="config_filename",
                         default='config.json')
 
-    parser.add_argument('-s',
-                        action="store",
-                        dest="swimlane_category",
-                        default=None)
-
     args = parser.parse_args()
 
     config_file = open(args.config_filename)
@@ -56,17 +51,15 @@ def main():
         config['reverse_history'] = 0
 
     metrics = Metrics(config=config)
-
     metrics.save_work_items()
 
     try:
         publisher.publish(config,
                           metrics,
                           from_date=start_date.date(),
-                          to_date=end_date.date())        
+                          to_date=end_date.date())
     except MissingState as error:
         sys.exit(error.msg)
-
     except MissingConfigItem as error:
         sys.exit("Missing config parameter:{0}".format(error))
 
