@@ -19,7 +19,7 @@ import sys
 from datetime import date, datetime
 import logging
 
-from jlf_stats.history import history_from_jira_changelog
+from jlf_stats.issue_generator import Issue_Generator
 from jlf_stats.exceptions import MissingConfigItem
 from jlf_stats.work import WorkItem
 import dateutil.parser
@@ -76,6 +76,7 @@ class JiraWrapper(object):
 
         self.reverse_history = config['reverse_history']
         self.initial_state = config['initial_state']
+        self.ignore_blocker = False
 
         try:
             self.categories = config['categories']
@@ -136,6 +137,8 @@ class JiraWrapper(object):
                                                       expand='changelog')
 
                 logging.info("Found {} items".format(issue_batch.total))
+                
+                issue_generator = Issue_Generator(self.initial_state, self.reverse_history, self.ignore_blocker, self.until_date)
 
                 for issue in issue_batch:
 
@@ -150,13 +153,13 @@ class JiraWrapper(object):
 
                     if issue.changelog is not None:
                         logging.debug("Changelog available for item {}".format(issue.key))
-                        issue_history = history_from_jira_changelog(issue.changelog, self.reverse_history, self.initial_state, date_created, self.until_date)
+                        item = issue_generator.from_jira_history(issue.changelog, date_created)
 
                     work_items.append(WorkItem(id=issue.key,
                                                title=issue.fields.summary,
                                                state=issue.fields.status.name,
                                                type=issue.fields.issuetype.name,
-                                               history=issue_history,
+                                               history=item.history(),
                                                state_transitions=state_transitions,
                                                date_created=date_created,
                                                cycles=cycles,
