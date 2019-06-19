@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 from jlf_stats.issue import Issue
 
-def extract_date(created):
-    date = datetime.strptime(created[:10], '%Y-%m-%d').date()
+def extract_date(date_string):
+    date = datetime.strptime(date_string[:10], '%Y-%m-%d').date()
     return datetime.combine(date, datetime.min.time())
 
 

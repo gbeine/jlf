@@ -1,41 +1,50 @@
 
 import logging
-import pandas
 
+from pandas import Series
+from pandas import to_datetime
 from datetime import datetime
 from datetime import timedelta
 
 class Issue(object):
 
-    def __init__(self, initial_state, created_date, ignore_blocker=False):
+    def __init__(self, initial_state, created_date, ignore_blocker=True):
+        self._ignore_blocker = ignore_blocker
+
         self._current_state = initial_state
         self._last_state = None
+
+        if isinstance(created_date, datetime):
+            created_date = created_date.date()
 
         self._created_date = created_date
         self._state_change_date = None
         self._last_state_change_date = created_date
 
         self._time_in_states = []
+        self._history = []
+        self._total_days = 0
         self._finalized = False
         self._is_blocked = False
-        
-        self._ignore_blocker = ignore_blocker
 
 
-    def add_change(self, date, change):
+    def add_change(self, change_date, change):
+
+        if isinstance(change_date, datetime):
+            change_date = change_date.date()
         
         if change.field == 'status':
             if self._is_blocked:
                 self._last_state = change.toString
                 logging.debug("State change to {} on {} while blocked".format(self._current_state, self._state_change_date))
             else:
-                self._add_change(date, change)
+                self._add_change(change_date, change)
                 self._last_state = self._current_state
                 self._current_state = change.toString
                 logging.debug("State change to {} on {}".format(self._current_state, self._state_change_date))
 
         if not self._ignore_blocker and change.field in ['Markiert']:
-            self._add_change(date, change)
+            self._add_change(change_date, change)
 
             if len(change.toString) == 0:
                 self._current_state = self._last_state
@@ -47,13 +56,15 @@ class Issue(object):
             logging.debug("State change to {} on {}".format(self._current_state, self._state_change_date))
 
 
-    def finalize_history(self, date=None):
+    def finalize_history(self, final_date=None):
         if self._finalized:
             return
 
         final_state_days = 1
-        if date is not None:
-            final_date = datetime.combine(date, datetime.min.time())
+        if final_date is not None:
+            if isinstance(final_date, datetime):
+                final_date = final_date.date()
+
             final_days = final_date - self._last_state_change_date
             final_state_days = final_days.days
 
@@ -63,10 +74,7 @@ class Issue(object):
 
     def history(self):
         if not self._finalized:
-            self.finalizeHistory()
-
-        history = []
-        total_days = 0
+            self.finalize_history()
 
         for state_days in self._time_in_states:
             state = state_days['state']
@@ -74,13 +82,17 @@ class Issue(object):
 
             days_in_state = [state] * days
 
-            history += days_in_state
-            total_days += days
+            self._history += days_in_state
+            self._total_days += days
 
-        dates = [self._created_date + timedelta(days=x) for x in range(0, total_days)]
-        logging.debug("Issue exists for {} days".format(total_days))
+        dates = [self._created_date + timedelta(days=x) for x in range(0, self._total_days)]
+        logging.debug("Issue exists for {} days".format(self._total_days))
 
-        return pandas.Series(history, index=dates)
+        return Series(self._history, index=to_datetime(dates))
+
+
+    def total_days(self):
+        return self._total_days
 
 
     def _add_change(self, date, change):
