@@ -73,6 +73,30 @@ class Issue(object):
 
 
     def history(self):
+        if not self._history:
+            self._create_history()
+
+        dates = [self._created_date + timedelta(days=x) for x in range(0, self._total_days)]
+
+        return Series(self._history, index=to_datetime(dates))
+
+
+    def total_days(self):
+        if not self._history:
+            self._create_history()
+
+        return self._total_days
+
+
+    def _add_change(self, date, change):
+        self._state_change_date = date
+        days_in_state = self._state_change_date - self._last_state_change_date
+        logging.debug("State {} for {} days".format(self._current_state, days_in_state.days))
+        self._time_in_states.append({'state': self._current_state, 'days': days_in_state.days})
+        self._last_state_change_date = self._state_change_date
+
+
+    def _create_history(self):
         if not self._finalized:
             self.finalize_history()
 
@@ -85,19 +109,4 @@ class Issue(object):
             self._history += days_in_state
             self._total_days += days
 
-        dates = [self._created_date + timedelta(days=x) for x in range(0, self._total_days)]
         logging.debug("Issue exists for {} days".format(self._total_days))
-
-        return Series(self._history, index=to_datetime(dates))
-
-
-    def total_days(self):
-        return self._total_days
-
-
-    def _add_change(self, date, change):
-        self._state_change_date = date
-        days_in_state = self._state_change_date - self._last_state_change_date
-        logging.debug("State {} for {} days".format(self._current_state, days_in_state.days))
-        self._time_in_states.append({'state': self._current_state, 'days': days_in_state.days})
-        self._last_state_change_date = self._state_change_date

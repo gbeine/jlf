@@ -5,8 +5,7 @@ from datetime import datetime
 from jlf_stats.issue import Issue
 
 def extract_date(date_string):
-    date = datetime.strptime(date_string[:10], '%Y-%m-%d').date()
-    return datetime.combine(date, datetime.min.time())
+    return datetime.strptime(date_string[:10], '%Y-%m-%d').date()
 
 
 def history_from_jira_changelog(changelog, reverse_history, initial_state, created_date, until_date=None):

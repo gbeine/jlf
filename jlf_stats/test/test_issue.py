@@ -9,7 +9,7 @@ from jlf_stats.issue import Issue
 
 class TestIssue(unittest.TestCase):
     
-    def test_dummy(self):
+    def test_init(self):
         issue = Issue('Open', date(2018,1,1))
         self.assertIsInstance(issue, Issue)
 
@@ -21,7 +21,6 @@ class TestIssue(unittest.TestCase):
         change = self._create_change('status', 'Open', 'Closed')
         issue.add_change(date(2018,1,3), change)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 0)
         history = issue.history()
         self.assertEqual(issue.total_days(), 3)
         expected = self._create_series(['Open', 'Open', 'Closed'], ['2018-01-01', '2018-01-02', '2018-01-03'])
@@ -35,7 +34,6 @@ class TestIssue(unittest.TestCase):
         change = self._create_change('status', 'Open', 'Closed')
         issue.add_change(date(2018,1,3), change)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 0)
         issue.finalize_history(date.today())
         history = issue.history()
         expected_days = date.today() - date(2018,1,1)
@@ -53,7 +51,6 @@ class TestIssue(unittest.TestCase):
         change = self._create_change('status', 'Open', 'Closed')
         issue.add_change(date(2018,1,10), change)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 0)
         history = issue.history()
         self.assertEqual(issue.total_days(), 10)
         expected_states = ['Open', 'Open', 'Hindernis', 'Hindernis', 'Hindernis', 'Open', 'Open', 'Open', 'Open', 'Closed']
@@ -74,7 +71,6 @@ class TestIssue(unittest.TestCase):
         change = self._create_change('status', 'In Progress', 'Closed')
         issue.add_change(date(2018,1,10), change)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 0)
         history = issue.history()
         self.assertEqual(issue.total_days(), 10)
         expected_states = ['Open', 'Open', 'Hindernis', 'Hindernis', 'Hindernis', 'Hindernis', 'In Progress', 'In Progress', 'In Progress', 'Closed']
@@ -94,7 +90,6 @@ class TestIssue(unittest.TestCase):
         change = self._create_change('status', 'Open', 'Closed')
         issue.add_change(date(2018,1,10), change)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 0)
         history = issue.history()
         self.assertEqual(issue.total_days(), 10)
         expected_states = ['Open', 'Open', 'Open', 'Open', 'Open', 'Open', 'Open', 'Open', 'Open', 'Closed']
@@ -104,7 +99,7 @@ class TestIssue(unittest.TestCase):
 
 
     def _create_change(self, field, from_string, to_string):
-        return type('Dummy', (object,), { "field": field, "fromString": from_string, "toString": to_string })
+        return type('Change', (object,), { "field": field, "fromString": from_string, "toString": to_string })
 
 
     def _create_series(self, states, dates):
