@@ -15,18 +15,27 @@ class Issue_Generator(object):
         self._until_date = until_date
 
 
-    def from_jira_history(self, changelog, created_date):
-        logging.debug("Changelog with {} entries".format(changelog.total))
+    def from_jira_issue(self, jira_issue):
+        date_created = self._extract_date(jira_issue.fields.created)
 
-        if created_date is None:
-            created_date = date(1970,1,1)
+        logging.debug("Item {}, created at {}".format(jira_issue.key, date_created))
+
+        issue = Issue(self._initial_state, date_created, self._ignore_blocker)
+
+        if jira_issue.changelog is not None:
+            logging.debug("Changelog available for item {}".format(jira_issue.key))
+            self._from_jira_history(jira_issue.changelog, issue)
+            
+        return issue
+
+
+    def _from_jira_history(self, changelog, issue):
+        logging.debug("Changelog with {} entries".format(changelog.total))
 
         if self._reverse_history:
             history_data = reversed(changelog.histories)
         else:
             history_data = changelog.histories
-
-        issue = Issue(self._initial_state, created_date, self._ignore_blocker)
 
         for history in history_data:
             change_date = self._extract_date(history.created)
@@ -36,8 +45,6 @@ class Issue_Generator(object):
                     issue.add_change(change_date, item)
 
         issue.finalize_history(self._until_date)
-
-        return issue
 
 
     def _extract_date(self, date_string):

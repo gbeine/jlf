@@ -147,13 +147,7 @@ class JiraWrapper(object):
                     cycles = {}
                     state_transitions = []
 
-                    date_created = datetime.strptime(issue.fields.created[:10], '%Y-%m-%d')
-
-                    logging.debug("Item {}, created at {}".format(issue.key, date_created))
-
-                    if issue.changelog is not None:
-                        logging.debug("Changelog available for item {}".format(issue.key))
-                        item = issue_generator.from_jira_history(issue.changelog, date_created)
+                    item = issue_generator.from_jira_issue(issue)
 
                     work_items.append(WorkItem(id=issue.key,
                                                title=issue.fields.summary,
@@ -161,7 +155,7 @@ class JiraWrapper(object):
                                                type=issue.fields.issuetype.name,
                                                history=item.history(),
                                                state_transitions=state_transitions,
-                                               date_created=date_created,
+                                               date_created=item.date_created(),
                                                cycles=cycles,
                                                category=category))
 

@@ -12,42 +12,40 @@ class TestIssueGenerator(unittest.TestCase):
         self.assertIsInstance(issue_generator, Issue_Generator)
 
 
-    def test_simple_history(self):
+    def test_simple_issue(self):
         issue_generator = Issue_Generator('Open')
         self.assertIsInstance(issue_generator, Issue_Generator)
-        changelog = self._create_changelog()
-        issue = issue_generator.from_jira_history(changelog, date(2018,1,1))
+        jira_issue = self._create_jira_issue()
+        issue = issue_generator.from_jira_issue(jira_issue)
         self.assertIsInstance(issue, Issue)
         self.assertEqual(issue.total_days(), 3)
  
 
-    def test_simple_history_revert(self):
+    def test_simple_issue_revert(self):
         issue_generator = Issue_Generator('Open', reverse_history=True)
         self.assertIsInstance(issue_generator, Issue_Generator)
-        changelog = self._create_changelog()
-        changelog.histories = list(reversed(changelog.histories))
-        issue = issue_generator.from_jira_history(changelog, date(2018,1,1))
+        jira_issue = self._create_jira_issue()
+        jira_issue.changelog.histories = list(reversed(jira_issue.changelog.histories))
+        issue = issue_generator.from_jira_issue(jira_issue)
         self.assertIsInstance(issue, Issue)
         self.assertEqual(issue.total_days(), 3)
 
 
-    def test_history_without_created_date(self):
-        issue_generator = Issue_Generator('Open')
+    def test_simple_issue_with_until_date(self):
+        issue_generator = Issue_Generator('Open', until_date=date(2018,1,11))
         self.assertIsInstance(issue_generator, Issue_Generator)
-        changelog = self._create_changelog()
-        issue = issue_generator.from_jira_history(changelog, None)
+        jira_issue = self._create_jira_issue()
+        issue = issue_generator.from_jira_issue(jira_issue)
         self.assertIsInstance(issue, Issue)
-        self.assertEqual(issue.total_days(), 17535)
+        self.assertEqual(issue.total_days(), 10)
 
 
-    def test_history_with_until_date(self):
-        issue_generator = Issue_Generator('Open', until_date=date(2018,1,10))
-        self.assertIsInstance(issue_generator, Issue_Generator)
-        changelog = self._create_changelog()
-        issue = issue_generator.from_jira_history(changelog, None)
-        self.assertIsInstance(issue, Issue)
-        expected_days = date(2018,1,10) - date(1970,1,1)
-        self.assertEqual(issue.total_days(), expected_days.days)
+    def _create_jira_issue(self):
+        return type('JiraIssue', (object,), {
+            "key": "TEST-1",
+            "fields": type('Field', (object,), { "created": "2018-01-01" }),
+            "changelog": self._create_changelog()
+             })
 
 
     def _create_changelog(self):

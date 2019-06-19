@@ -8,18 +8,18 @@ from datetime import timedelta
 
 class Issue(object):
 
-    def __init__(self, initial_state, created_date, ignore_blocker=True):
+    def __init__(self, initial_state, date_created, ignore_blocker=True):
         self._ignore_blocker = ignore_blocker
 
         self._current_state = initial_state
         self._last_state = None
 
-        if isinstance(created_date, datetime):
-            created_date = created_date.date()
+        if isinstance(date_created, datetime):
+            date_created = date_created.date()
 
-        self._created_date = created_date
+        self._date_created = date_created
         self._state_change_date = None
-        self._last_state_change_date = created_date
+        self._last_state_change_date = date_created
 
         self._time_in_states = []
         self._history = []
@@ -76,7 +76,7 @@ class Issue(object):
         if not self._history:
             self._create_history()
 
-        dates = [self._created_date + timedelta(days=x) for x in range(0, self._total_days)]
+        dates = [self._date_created + timedelta(days=x) for x in range(0, self._total_days)]
 
         return Series(self._history, index=to_datetime(dates))
 
@@ -86,6 +86,10 @@ class Issue(object):
             self._create_history()
 
         return self._total_days
+
+
+    def date_created(self):
+        return self._date_created
 
 
     def _add_change(self, date, change):
