@@ -1,8 +1,6 @@
 """
 Metrics
 """
-from jlf_stats.jira_wrapper import JiraWrapper
-
 import pandas as pd
 import numpy as np
 import math
@@ -10,23 +8,18 @@ import re
 import os
 import json
 import logging
+from datetime import datetime
 
 from jlf_stats.exceptions import MissingConfigItem
 
 class Metrics(object):
 
-    def __init__(self, config):
+    def __init__(self, config, jira_wrapper):
 
-        self.source = None
         self.work_items = None
         self.states = []
         self.config = config
-
-        m = re.match("^ENV\(([^\']+)\)", self.config['source']['authentication']['password'])
-        if m is not None:
-            self.config['source']['authentication']['password'] = os.environ.get(m.group(1), 'undefined')
-
-        self.source = JiraWrapper(self.config)
+        self.source = jira_wrapper
 
         if 'throughput_dow' in config:
             self.throughput_dow = config['throughput_dow']
@@ -60,17 +53,11 @@ class Metrics(object):
             if types is None:
                 # HACK HACK HACK
                 # Also need some consistency around thing_date and date_thing
-                if isinstance(self.source, JiraWrapper):
-                    history[work_item.id] = work_item.history
-                else:
-                    history[work_item.id] = history_from_state_transitions(work_item.date_created.date(), work_item.history, until_date)
+                history[work_item.id] = work_item.history.history
             else:
                 for type_grouping in types:
                     if work_item.type in self.types[type_grouping]: 
-                        if isinstance(self.source, JiraWrapper):
-                            history[work_item.id] = work_item.history
-                        else:
-                            history[work_item.id] = history_from_state_transitions(work_item.date_created.date(), work_item.history, until_date)
+                        history[work_item.id] = work_item.history.history
 
         if history is not None:
             df = pd.DataFrame(history)
@@ -92,9 +79,9 @@ class Metrics(object):
 
         output = []
 
-        for item in self.work_items:
-            # This is so wrong.  We are decoding then encoding then decoding again...
-            output.append(json.loads(item.to_JSON()))
+        # for item in self.work_items:
+        #     # This is so wrong.  We are decoding then encoding then decoding again...
+        #     output.append(json.loads(item.to_JSON()))
 
-        with open(filename, 'w') as outfile:
-            json.dump(output, outfile, indent=4, sort_keys=True)
+        # with open(filename, 'w') as outfile:
+        #     json.dump(output, outfile, indent=4, sort_keys=True)

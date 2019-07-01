@@ -19,72 +19,23 @@ import sys
 from datetime import date, datetime
 import logging
 
-from jlf_stats.issue_generator import Issue_Generator
+from jlf_stats.jira_iterator import Jira_Iterator
 from jlf_stats.exceptions import MissingConfigItem
-from jlf_stats.work import WorkItem
 import dateutil.parser
 
 
-class JiraWrapper(object):
+class Jira_Wrapper(object):
     """
     Wrapper around our JIRA instance
     """
 
-    def __init__(self, config):
+    def __init__(self, source, work_item_generator):
 
-        authentication = None
-
-        try:
-            source = config['source']
-        except KeyError as e:
-            raise MissingConfigItem(e, "Missing Config Item:{0}".format(e))
-
-        self.jira = None
-
-        authentication = source['authentication']
-
-        if 'username' in authentication and 'password' in authentication:
-            self.jira = jira.client.JIRA({'server': source['server']},
-                                         basic_auth=(authentication['username'],
-                                                     authentication['password']))
-        elif ('access_token' in authentication and
-              'access_token_secret' in authentication and
-              'consumer_key' in authentication and
-              'key_cert'):
-
-            try:
-                with open(authentication['key_cert'], 'r') as key_cert_file:
-                    key_cert_data = key_cert_file.read()
-            except IOError:
-                raise MissingConfigItem('key_cert', "key_cert not found:{0}". format(authentication['key_cert']))
-
-            self.jira = jira.client.JIRA({'server': source['server']},
-                                         oauth={'access_token': authentication['access_token'],
-                                                'access_token_secret': authentication['access_token_secret'],
-                                                'consumer_key': authentication['consumer_key'],
-                                                'key_cert': key_cert_data})
-        else:
-            raise MissingConfigItem('authentication', "Authentication misconfigured")
-
-        self.categories = None
-        self.cycles = None
-        self.types = None
-        self.until_date = None
-
-        if 'until_date' in config:
-            self.until_date = datetime.strptime(config['until_date'], '%Y-%m-%d').date()
-
-        self.reverse_history = config['reverse_history']
-        self.initial_state = config['initial_state']
-        self.ignore_blocker = False
-
-        try:
-            self.categories = config['categories']
-            self.cycles = config['cycles']
-        except KeyError as e:
-            raise MissingConfigItem(e.message, "Missing Config Item:{0}".format(e.message))
+        self._connect(source['server'], source['authentication'])
+        self._work_item_generator = work_item_generator
 
         self.all_issues = None
+        
 
     def work_items(self):
         """
@@ -111,57 +62,52 @@ class JiraWrapper(object):
 # Internal methods
 ###############################################################################
 
+    def _connect(self, server, credentials):
+
+        self._jira = None
+
+        if 'username' in credentials and 'password' in credentials:
+            self._jira = jira.client.JIRA({'server': server},
+                                         basic_auth=(credentials['username'],
+                                                     credentials['password']))
+        elif ('access_token' in credentials and
+              'access_token_secret' in credentials and
+              'consumer_key' in credentials and
+              'key_cert'):
+
+            try:
+                with open(credentials['key_cert'], 'r') as key_cert_file:
+                    key_cert_data = key_cert_file.read()
+            except IOError:
+                raise MissingConfigItem('key_cert', "key_cert not found:{0}". format(credentials['key_cert']))
+
+            self._jira = jira.client.JIRA({'server': server},
+                                         oauth={'access_token': credentials['access_token'],
+                                                'access_token_secret': credentials['access_token_secret'],
+                                                'consumer_key': credentials['consumer_key'],
+                                                'key_cert': key_cert_data})
+        else:
+            raise MissingConfigItem('credentials', "Authentication misconfigured")
+
+
     def _issues_from_jira(self, filter=None):
         """
         Get the actual issues from Jira itself via the Jira REST API
         """
 
-        batch_size = 100
         work_items = []
         
-        for category in self.categories:
+        iterator = Jira_Iterator(self._jira, filter)
+            
+        while iterator.has_more:
+            issue_batch = iterator.next_batch()
 
-            logging.debug(category)
-            n = 0
-            while 1:
+            logging.info("Found {} items".format(issue_batch.total))
 
-                jql = self.categories[category]
-                if filter is not None:
-                    jql = jql + filter
+            for issue in issue_batch:
+                item = self._work_item_generator.from_jira_issue(issue)
+                work_items.append(item)
 
-                logging.debug(jql)
-
-                issue_batch = self.jira.search_issues(jql,
-                                                      startAt=n,
-                                                      maxResults=batch_size,
-                                                      expand='changelog')
-
-                logging.info("Found {} items".format(issue_batch.total))
-                
-                issue_generator = Issue_Generator(self.initial_state, self.reverse_history, self.ignore_blocker, self.until_date)
-
-                for issue in issue_batch:
-
-                    issue.category = category
-                    issue_history = None
-                    cycles = {}
-                    state_transitions = []
-
-                    item = issue_generator.from_jira_issue(issue)
-
-                    work_items.append(WorkItem(id=issue.key,
-                                               title=issue.fields.summary,
-                                               state=issue.fields.status.name,
-                                               type=issue.fields.issuetype.name,
-                                               history=item.history(),
-                                               state_transitions=state_transitions,
-                                               date_created=item.date_created(),
-                                               cycles=cycles,
-                                               category=category))
-
-                if len(issue_batch) < batch_size:
-                    break
-                n += batch_size
                 sys.stdout.write('.')
                 sys.stdout.flush()
 
