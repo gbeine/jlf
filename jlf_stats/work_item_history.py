@@ -6,9 +6,10 @@ from pandas import to_datetime
 from datetime import datetime
 from datetime import timedelta
 
-class Issue(object):
+class Work_Item_History(object):
 
     def __init__(self, initial_state, date_created, ignore_blocker=True):
+
         self._ignore_blocker = ignore_blocker
 
         self._current_state = initial_state
@@ -72,6 +73,7 @@ class Issue(object):
         self._finalized = True
 
 
+    @property
     def history(self):
         if not self._history:
             self._create_history()
@@ -81,15 +83,12 @@ class Issue(object):
         return Series(self._history, index=to_datetime(dates))
 
 
+    @property
     def total_days(self):
         if not self._history:
             self._create_history()
 
         return self._total_days
-
-
-    def date_created(self):
-        return self._date_created
 
 
     def _add_change(self, date, change):
