@@ -1,7 +1,13 @@
 language: python
-python:
-  - "3.7"
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install .
 # command to run tests, e.g. python setup.py test
 script: nosetests
+matrix:
+  include:
+    - python: 2.7
+    - python: 3.5
+    - python: 3.6
+    - python: 3.7
+      dist: xenial
+      sudo: true
