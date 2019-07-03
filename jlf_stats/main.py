@@ -21,6 +21,7 @@ class Main(object):
     def jira_wrapper(self):
         return self._jira_wrapper
 
+
     def _init_config(self, config):
         try:
             self._source = config['source']

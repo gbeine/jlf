@@ -1,6 +1,12 @@
 # Just _lean_ forward
 
-[![Build Status](https://travis-ci.org/worldofchris/jlf.png)](https://travis-ci.org/worldofchris/jlf)
+**NOTE**
+
+This is a refactored version of jlf to run with Python 3.
+At the moment, only the export of history into Excel is working as in the original version.
+All other metrics will be supported again.
+
+[![Build Status](https://travis-ci.org/gbeine/jlf.png)](https://travis-ci.org/gbeine/jlf)
 
 ## Extract _forward_ looking indicators from JIRA and FogBugz
 
