@@ -37,12 +37,12 @@ class Jira_Wrapper(object):
         self.all_issues = None
         
 
-    def work_items(self):
+    def work_items(self, work_items, filter=None):
         """
         All issues
         """
         if self.all_issues is None:
-            self.all_issues = self._issues_from_jira()
+            self.all_issues = self._issues_from_jira(work_items, filter)
 
         return self.all_issues
 
@@ -90,12 +90,12 @@ class Jira_Wrapper(object):
             raise MissingConfigItem('credentials', "Authentication misconfigured")
 
 
-    def _issues_from_jira(self, filter=None):
+    def _issues_from_jira(self, work_items, filter):
         """
         Get the actual issues from Jira itself via the Jira REST API
         """
 
-        work_items = []
+        work_item_list = []
         
         iterator = Jira_Iterator(self._jira, filter)
             
@@ -106,9 +106,10 @@ class Jira_Wrapper(object):
 
             for issue in issue_batch:
                 item = self._work_item_generator.from_jira_issue(issue)
-                work_items.append(item)
+                work_item_list.append(item)
+                work_items.add_work_item(item)
 
                 sys.stdout.write('.')
                 sys.stdout.flush()
 
-        return work_items
+        return work_item_list
