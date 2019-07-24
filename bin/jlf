@@ -5,50 +5,27 @@ Get forward looking metrics from JIRA
 
 from jlf_stats.main import Main
 from jlf_stats import publisher
+from jlf_stats.args import Args
+from jlf_stats.exceptions import MissingState, MissingConfigItem
 
 import json
 from datetime import datetime, timedelta
-import argparse
 import logging
 import sys
-from jlf_stats.exceptions import MissingState, MissingConfigItem
+
 
 
 def main():
 
     logging.basicConfig(level=logging.DEBUG)
 
-    parser = argparse.ArgumentParser(description='Get forward looking metrics from JIRA')
-
-    parser.add_argument('-n',
-                        action="store",
-                        dest="num_weeks",
-                        type=int,
-                        default=6)
-
-    parser.add_argument('-c',
-                        action="store",
-                        dest="config_filename",
-                        default='config.json')
-
-    args = parser.parse_args()
+    args = Args().args
 
     config_file = open(args.config_filename)
     config = json.load(config_file)
 
     end_date = datetime.now()
     start_date = end_date - timedelta(weeks=args.num_weeks)
-
-    if 'until_date' not in config:
-        config['until_date'] = datetime.strftime(end_date, '%Y-%m-%d')
-
-    if 'initial_state' not in config:
-        config['initial_state'] = u'Open'
-
-    if 'reverse_history' not in config or config['reverse_history'] != 'False':
-        config['reverse_history'] = 1
-    else:
-        config['reverse_history'] = 0
 
     main = Main(config)
 

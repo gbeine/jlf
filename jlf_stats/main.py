@@ -29,14 +29,34 @@ class Main(object):
         return self._work_item_processor
 
 
+    @property
+    def publisher(self):
+        return self._publisher
+
+
     def _init_config(self, config):
         try:
             self._source = config['source']
-            self._reverse_history = config['reverse_history']
-            self._initial_state = config['initial_state']
+
+            if 'reverse_history' in config:
+                self._reverse_history = config['reverse_history']
+            else:
+                self._reverse_history = False
+
+            if 'ignore_blocker' in config:
+                self._ignore_blocker = config['ignore_blocker']
+            else:
+                self._ignore_blocker = True
+
+            if 'initial_state' in config:
+                self._initial_state = config['initial_state']
+            else:
+                self._initial_state = u'Open'
 
             if 'until_date' in config:
                 self._until_date = datetime.strptime(config['until_date'], '%Y-%m-%d').date()
+            else:
+                self._until_date = datetime.now().date()
 
         except KeyError as e:
             raise MissingConfigItem(e, "Missing Config Item:{0}".format(e))
