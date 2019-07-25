@@ -66,6 +66,7 @@
             ]
         }
     ],
+    "reverse_history": false,
     "format": "xlsx",
     "location": "."
 }

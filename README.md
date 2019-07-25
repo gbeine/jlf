@@ -145,6 +145,10 @@ The location the spreadsheet should be written to is set with:
 The metrics to be included are then specified in:
 
     "reports": [..],
+
+Some JIRA instances save the history of issues in reverse order:
+
+    "reverse_history": false,
         
 The following metrics are available and can be configured as described below:
 
